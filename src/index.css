@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold: #C5A059;
+  --color-premium: #D4AF37;
+  --color-dark: #2C2C2C;
+  --color-light: #FDFBF7;
+
+  --font-sans: "Manrope", sans-serif;
+  --font-serif: "Noto Serif", serif;
+}
