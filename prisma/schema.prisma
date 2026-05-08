@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////
+// USUARIOS Y ROLES //
+//////////////////////
+
+model Usuario {
+  id Int @id @default(autoincrement())
+
+  nombre     String?
+  email      String? @unique
+  contrasena String?
+
+  rolId Int
+  rol   Rol @relation(fields: [rolId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  solicitudesCreadas   Solicitud[] @relation("Creador")
+  solicitudesAprobadas Solicitud[] @relation("Aprobador")
+
+  notificaciones     Notificacion[]
+  HistorialSolicitud HistorialSolicitud[]
+}
+
+model Rol {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  usuarios Usuario[]
+}
+
+//////////////////////
+// GEOGRAFÍA        //
+//////////////////////
+
+model Pais {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  regiones Region[]
+}
+
+model Region {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  paisId Int
+  pais   Pais @relation(fields: [paisId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  comunas Comuna[]
+}
+
+model Comuna {
+  id     Int    @id @default(autoincrement())
+  nombre String
+
+  regionId Int
+  region   Region @relation(fields: [regionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  trabajadores Trabajador[]
+  empresas     Empresa[]
+
+  @@unique([nombre, regionId])
+}
+
+//////////////////////
+// EMPRESA          //
+//////////////////////
+
+model Empresa {
+  id Int @id @default(autoincrement())
+
+  nombre    String
+  rut       String @unique
+  direccion String
+
+  comunaId Int
+  comuna   Comuna @relation(fields: [comunaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  representanteLegalId Int
+  representanteLegal   RepLegal @relation(fields: [representanteLegalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  solicitudes Solicitud[]
+}
+
+model RepLegal {
+  id Int @id @default(autoincrement())
+
+  nombres   String
+  apellidos String
+  rut       String @unique
+
+  empresas Empresa[]
+}
+
+//////////////////////
+// TRABAJADOR       //
+//////////////////////
+
+model Trabajador {
+  id Int @id @default(autoincrement())
+
+  nombres   String
+  apellidos String
+  rut       String @unique
+
+  direccion       String
+  fechaNacimiento DateTime
+
+  comunaId Int
+  comuna   Comuna @relation(fields: [comunaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  estadoCivilId Int
+  estadoCivil   EstadoCivil @relation(fields: [estadoCivilId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  previsionId Int
+  prevision   PrevisionSalud @relation(fields: [previsionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  afiliacionId Int
+  afiliacion   Afiliacion @relation(fields: [afiliacionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  cargoPrincipalId Int?
+  cargoPrincipal   Cargo? @relation(fields: [cargoPrincipalId], references: [id])
+
+  asignaciones AsignacionTrabajador[]
+}
+
+//////////////////////
+// SOLICITUD        //
+//////////////////////
+
+model Solicitud {
+  id Int @id @default(autoincrement())
+
+  fechaInicio DateTime
+  fechaFin    DateTime
+  comentario  String?
+  montoTotal  Float?
+
+  estadoId Int
+  estado   EstadoSolicitud @relation(fields: [estadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  creadorId Int
+  creador   Usuario @relation("Creador", fields: [creadorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  aprobadorId Int?
+  aprobador   Usuario? @relation("Aprobador", fields: [aprobadorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  trabajadores       SolicitudTrabajador[]
+  HistorialSolicitud HistorialSolicitud[]
+}
+
+//////////////////////////////
+// DETALLE SOLICITUD 🔥     //
+//////////////////////////////
+
+model SolicitudTrabajador {
+  id Int @id @default(autoincrement())
+
+  solicitudId Int
+
+  cargoId Int
+  turnoId Int
+
+  cantidad      Int
+  montoUnitario Float
+
+  tarifaId Int?
+  tarifa   Tarifa? @relation(fields: [tarifaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  cargo Cargo @relation(fields: [cargoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  turno Turno @relation(fields: [turnoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  solicitud Solicitud @relation(fields: [solicitudId], references: [id])
+
+  asignaciones AsignacionTrabajador[]
+}
+
+model AsignacionTrabajador {
+  id Int @id @default(autoincrement())
+
+  solicitudTrabajadorId Int
+  trabajadorId          Int
+
+  solicitudDetalle SolicitudTrabajador @relation(fields: [solicitudTrabajadorId], references: [id])
+  trabajador       Trabajador          @relation(fields: [trabajadorId], references: [id])
+  contrato Contrato?
+
+  @@unique([solicitudTrabajadorId, trabajadorId])
+  @@index([solicitudTrabajadorId])
+  @@index([trabajadorId])
+}
+
+model HistorialSolicitud {
+  id Int @id @default(autoincrement())
+
+  solicitudId Int
+  estadoId    Int
+
+  fecha      DateTime @default(now())
+  comentario String?
+
+  solicitud Solicitud       @relation(fields: [solicitudId], references: [id])
+  estado    EstadoSolicitud @relation(fields: [estadoId], references: [id])
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+}
+
+//////////////////////
+// CONTRATO         //
+//////////////////////
+
+model Contrato {
+  id Int @id @default(autoincrement())
+
+  fechaInicio DateTime
+  fechaFin    DateTime
+  monto       Float
+
+  asignacionTrabajadorId Int @unique
+
+  asignacion AsignacionTrabajador @relation(fields: [asignacionTrabajadorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+//////////////////////
+// CATÁLOGOS        //
+//////////////////////
+
+model EstadoSolicitud {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  solicitudes        Solicitud[]
+  HistorialSolicitud HistorialSolicitud[]
+}
+
+model EstadoCivil {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  trabajadores Trabajador[]
+}
+
+model PrevisionSalud {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  trabajadores Trabajador[]
+}
+
+model Afiliacion {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  trabajadores Trabajador[]
+}
+
+//////////////////////
+// ESTRUCTURA HOTEL //
+//////////////////////
+
+model Area {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  cargos Cargo[]
+}
+
+model Cargo {
+  id     Int    @id @default(autoincrement())
+  nombre String
+
+  areaId Int
+  area   Area @relation(fields: [areaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  solicitudesDetalle SolicitudTrabajador[]
+
+  trabajadoresConCargoPrincipal Trabajador[]
+  tarifas Tarifa[]
+
+  @@unique([nombre, areaId])
+}
+
+model Turno {
+  id Int @id @default(autoincrement())
+
+  inicio        DateTime @db.Time
+  fin           DateTime @db.Time
+  duracionHoras Float @default(8)
+
+  solicitudesDetalle SolicitudTrabajador[]
+  tarifas Tarifa[]
+
+  @@unique([inicio, fin])
+}
+
+model Tarifa {
+  id Int @id @default(autoincrement())
+
+  cargoId Int
+  turnoId Int?
+
+  valorHora Float
+
+  vigenteDesde DateTime
+  vigenteHasta DateTime?
+
+  cargo Cargo  @relation(fields: [cargoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  turno Turno? @relation(fields: [turnoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  solicitudesDetalle SolicitudTrabajador[]
+
+  @@index([cargoId, turnoId, vigenteDesde])
+}
+
+//////////////////////
+// NOTIFICACIONES   //
+//////////////////////
+
+model Notificacion {
+  id Int @id @default(autoincrement())
+
+  usuarioId Int
+  fecha     DateTime?
+  contenido String?
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
