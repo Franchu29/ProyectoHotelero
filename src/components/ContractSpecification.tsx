@@ -30,11 +30,11 @@ export default function ContractSpecification({ solicitud }: Props) {
 
       <div className="grid grid-cols-3 gap-4 pt-2">
         <StatsCard 
-          title="Estado" 
+          label="Estado" 
           value={solicitud.estado?.nombre || "Sin estado"} 
         />
         <StatsCard 
-          title="Fecha fin" 
+          label="Fecha fin" 
           value={
             solicitud.fechaFin
               ? new Date(solicitud.fechaFin).toLocaleDateString()
@@ -42,7 +42,7 @@ export default function ContractSpecification({ solicitud }: Props) {
           } 
         />
         <StatsCard 
-          title="Monto" 
+          label="Monto" 
           value={`$${solicitud.montoTotal ?? 0}`} 
         />
       </div>
