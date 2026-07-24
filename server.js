@@ -16,8 +16,11 @@ app.set('port', process.env.PORT || 3000);
 
 // 🔥 MIDDLEWARES CLAVE (ANTES DE RUTAS)
 app.use(cors({
-    origin: 'http://localhost:5173', // React
-    credentials: true
+  origin: [
+    "http://localhost:5173", // local
+    "https://proyectohotelero.onrender.com/" // producción
+  ],
+  credentials: true
 }));
 
 app.use(morgan('dev'));
